@@ -182,3 +182,45 @@ tbody tr:hover {
   color: #64748b;
   margin: 0;
 }
+
+.card--edit {
+  border-color: #93c5fd;
+  background: #f8fafc;
+}
+
+.form__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn--link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  padding: 0.25rem 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn--link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.btn--link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mono--sm {
+  font-size: 0.75rem;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row--active {
+  background: #eff6ff !important;
+}

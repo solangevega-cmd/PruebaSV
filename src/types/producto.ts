@@ -18,3 +18,7 @@ export interface NuevoProducto {
   Stock: number
   'Valor Venta': number
 }
+
+export interface ActualizarProducto extends NuevoProducto {
+  tablasvega: string
+}

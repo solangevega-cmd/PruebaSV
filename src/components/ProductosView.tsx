@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { crearProducto, obtenerProductos } from '../api/tablasvega'
-import type { NuevoProducto, Producto } from '../types/producto'
+import {
+  actualizarProducto,
+  crearProducto,
+  obtenerProductos,
+} from '../api/tablasvega'
+import type { ActualizarProducto, NuevoProducto, Producto } from '../types/producto'
 import './ProductosView.css'
 
 const formularioInicial: NuevoProducto = {
@@ -23,6 +27,7 @@ export default function ProductosView() {
   const [error, setError] = useState<string | null>(null)
   const [mensaje, setMensaje] = useState<string | null>(null)
   const [form, setForm] = useState<NuevoProducto>(formularioInicial)
+  const [editando, setEditando] = useState<ActualizarProducto | null>(null)
 
   const cargarProductos = useCallback(async () => {
     setCargando(true)
@@ -47,6 +52,21 @@ export default function ProductosView() {
     cargarProductos()
   }, [cargarProductos])
 
+  function iniciarEdicion(producto: Producto) {
+    setEditando({
+      tablasvega: producto.tablasvega,
+      Nombre: producto.Nombre,
+      Stock: producto.Stock,
+      'Valor Venta': producto['Valor Venta'],
+    })
+    setMensaje(null)
+    setError(null)
+  }
+
+  function cancelarEdicion() {
+    setEditando(null)
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setEnviando(true)
@@ -69,13 +89,38 @@ export default function ProductosView() {
     }
   }
 
+  async function handleActualizar(e: FormEvent) {
+    e.preventDefault()
+    if (!editando) return
+
+    setEnviando(true)
+    setError(null)
+    setMensaje(null)
+
+    try {
+      await actualizarProducto({
+        tablasvega: editando.tablasvega,
+        Nombre: editando.Nombre.trim(),
+        Stock: Number(editando.Stock),
+        'Valor Venta': Number(editando['Valor Venta']),
+      })
+      setEditando(null)
+      setMensaje('Producto actualizado correctamente.')
+      await cargarProductos()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
   return (
     <div className="productos">
       <header className="productos__header">
         <div>
           <h1>Tablas Vega</h1>
           <p className="productos__subtitle">
-            Inventario desde API Gateway (GET / POST)
+            Inventario — API Gateway (GET / POST / PATCH)
           </p>
         </div>
         <button
@@ -90,6 +135,79 @@ export default function ProductosView() {
 
       {error && <div className="alert alert--error">{error}</div>}
       {mensaje && <div className="alert alert--success">{mensaje}</div>}
+
+      {editando && (
+        <section className="card card--edit">
+          <div className="card__title">
+            <h2>Editar producto</h2>
+            <span className="mono mono--sm" title={editando.tablasvega}>
+              {editando.tablasvega}
+            </span>
+          </div>
+          <form className="form" onSubmit={handleActualizar}>
+            <label>
+              Nombre
+              <input
+                type="text"
+                required
+                value={editando.Nombre}
+                onChange={(e) =>
+                  setEditando((f) =>
+                    f ? { ...f, Nombre: e.target.value } : f,
+                  )
+                }
+              />
+            </label>
+            <label>
+              Valor venta
+              <input
+                type="number"
+                required
+                min={0}
+                value={editando['Valor Venta'] || ''}
+                onChange={(e) =>
+                  setEditando((f) =>
+                    f
+                      ? { ...f, 'Valor Venta': Number(e.target.value) }
+                      : f,
+                  )
+                }
+              />
+            </label>
+            <label>
+              Stock
+              <input
+                type="number"
+                required
+                min={0}
+                value={editando.Stock || ''}
+                onChange={(e) =>
+                  setEditando((f) =>
+                    f ? { ...f, Stock: Number(e.target.value) } : f,
+                  )
+                }
+              />
+            </label>
+            <div className="form__actions">
+              <button
+                type="submit"
+                className="btn btn--primary"
+                disabled={enviando}
+              >
+                {enviando ? 'Guardando…' : 'Guardar (PATCH)'}
+              </button>
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={cancelarEdicion}
+                disabled={enviando}
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
 
       <section className="card">
         <h2>Nuevo producto</h2>
@@ -161,20 +279,34 @@ export default function ProductosView() {
                   <th>Nombre</th>
                   <th>Valor venta</th>
                   <th>Stock</th>
-                  <th>ID</th>
-                  <th>Creado</th>
+                  <th>Actualizado</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {productos.map((p) => (
-                  <tr key={p.tablasvega}>
+                  <tr
+                    key={p.tablasvega}
+                    className={
+                      editando?.tablasvega === p.tablasvega
+                        ? 'row--active'
+                        : undefined
+                    }
+                  >
                     <td>{p.Nombre}</td>
                     <td>${p['Valor Venta'].toLocaleString('es-CO')}</td>
                     <td>{p.Stock.toLocaleString('es-CO')}</td>
-                    <td className="mono" title={p.tablasvega}>
-                      {p.tablasvega.slice(0, 8)}…
+                    <td>{formatearFecha(p.updatedAt ?? p.createdAt)}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn--link"
+                        onClick={() => iniciarEdicion(p)}
+                        disabled={enviando}
+                      >
+                        Editar
+                      </button>
                     </td>
-                    <td>{formatearFecha(p.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>

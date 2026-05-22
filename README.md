@@ -6,6 +6,11 @@ Aplicación React (Vite + TypeScript) que consume la API de inventario:
 
 - **GET**: listar productos
 - **POST**: crear producto (`Nombre`, `Valor Venta`, `Stock`)
+- **PATCH**: actualizar producto (`tablasvega`, `Nombre`, `Valor Venta`, `Stock`)
+
+### Backend PATCH (Lambda)
+
+El frontend ya envía PATCH. Debes implementar la ruta en tu Lambda Express y habilitar el método **PATCH** en API Gateway. Ver ejemplo en `backend/lambda-patch-handler.example.js`.
 
 ## Desarrollo local
 
