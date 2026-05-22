@@ -32,7 +32,12 @@ export default function ProductosView() {
       setProductos(data.items)
       setTotal(data.count)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error desconocido')
+      const msg = e instanceof Error ? e.message : 'Error desconocido'
+      setError(
+        msg === 'Failed to fetch'
+          ? 'No se pudo conectar con la API. En Amplify: agrega el rewrite /tablasvega (ver amplify-rewrites.json) y quita VITE_API_URL con la URL de API Gateway.'
+          : msg,
+      )
     } finally {
       setCargando(false)
     }

@@ -1,8 +1,7 @@
 import type { NuevoProducto, ProductosResponse } from '../types/producto'
 
-const API_URL =
-  import.meta.env.VITE_API_URL ??
-  'https://nunk2bv345.execute-api.us-east-1.amazonaws.com/tablasvega'
+/** En Amplify usa ruta relativa + rewrite (evita CORS). En local, proxy de Vite. */
+const API_URL = import.meta.env.VITE_API_URL ?? '/tablasvega'
 
 export async function obtenerProductos(): Promise<ProductosResponse> {
   const res = await fetch(API_URL)

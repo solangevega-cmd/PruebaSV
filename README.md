@@ -30,15 +30,23 @@ El repositorio incluye `amplify.yml` para compilar y publicar automáticamente d
    - **Build command:** `npm run build`
    - **Output directory:** `dist`
    - (O deja que use `amplify.yml` automáticamente.)
-6. En **Environment variables** (opcional), agrega:
-   - `VITE_API_URL` = `https://nunk2bv345.execute-api.us-east-1.amazonaws.com/tablasvega`
-7. **Save and deploy**.
+6. **No** configures `VITE_API_URL` con la URL completa de API Gateway (provoca error CORS / "Failed to fetch").
+7. **Rewrites and redirects** (Hosting → tu app → App settings): pega el contenido de `amplify-rewrites.json` o agrega manualmente:
+   - `/tablasvega` → `https://nunk2bv345.execute-api.us-east-1.amazonaws.com/tablasvega` (tipo **200 Rewrite**)
+   - `/<*>` → `/index.html` (tipo **200 Rewrite**, para React)
+8. **Save and deploy** y vuelve a desplegar si ya estaba publicada.
 
 Cada `git push` a `main` volverá a desplegar la app.
 
-### CORS en API Gateway
+### Si ves "Failed to fetch"
 
-Si en producción ves errores de CORS, en tu API Gateway agrega el dominio de Amplify (`https://main.xxxxx.amplifyapp.com`) a los orígenes permitidos del método OPTIONS/GET/POST.
+La API no envía cabeceras CORS. La app llama a `/tablasvega` en el mismo dominio de Amplify; el **rewrite** hace de proxy hacia API Gateway.
+
+Si sigue fallando: confirma la regla de rewrite y que **no** exista `VITE_API_URL` apuntando a `execute-api.amazonaws.com` en variables de entorno de Amplify.
+
+### Alternativa: CORS en API Gateway
+
+En API Gateway → tu API → **CORS**, permite origen `https://main.dux01m64bkoq8.amplifyapp.com`, métodos GET/POST/OPTIONS y cabecera `Content-Type`. Luego podrías usar la URL directa de la API si lo prefieres.
 
 ### URL de la app
 

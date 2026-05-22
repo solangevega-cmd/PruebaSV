@@ -1,0 +1,14 @@
+[
+  {
+    "source": "/tablasvega",
+    "target": "https://nunk2bv345.execute-api.us-east-1.amazonaws.com/tablasvega",
+    "status": "200",
+    "condition": null
+  },
+  {
+    "source": "/<*>",
+    "target": "/index.html",
+    "status": "200",
+    "condition": null
+  }
+]
