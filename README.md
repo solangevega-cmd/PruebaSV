@@ -1,73 +1,47 @@
-# React + TypeScript + Vite
+# Tablas Vega — React + API Gateway
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación React (Vite + TypeScript) que consume la API de inventario:
 
-Currently, two official plugins are available:
+`https://nunk2bv345.execute-api.us-east-1.amazonaws.com/tablasvega`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **GET**: listar productos
+- **POST**: crear producto (`Nombre`, `Valor Venta`, `Stock`)
 
-## React Compiler
+## Desarrollo local
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Opcional: copia `.env.example` a `.env` y ajusta `VITE_API_URL`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Despliegue en AWS Amplify Hosting
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+El repositorio incluye `amplify.yml` para compilar y publicar automáticamente desde GitHub.
+
+### Pasos en la consola de AWS
+
+1. Entra a [AWS Amplify Console](https://console.aws.amazon.com/amplify/home) (región **us-east-1**, la misma de tu API).
+2. **Create new app** → **Host web app**.
+3. Elige **GitHub** y autoriza el acceso a tu cuenta.
+4. Selecciona el repositorio **solangevega-cmd/PruebaSV** y la rama **main**.
+5. Amplify detectará Vite/React. Verifica:
+   - **Build command:** `npm run build`
+   - **Output directory:** `dist`
+   - (O deja que use `amplify.yml` automáticamente.)
+6. En **Environment variables** (opcional), agrega:
+   - `VITE_API_URL` = `https://nunk2bv345.execute-api.us-east-1.amazonaws.com/tablasvega`
+7. **Save and deploy**.
+
+Cada `git push` a `main` volverá a desplegar la app.
+
+### CORS en API Gateway
+
+Si en producción ves errores de CORS, en tu API Gateway agrega el dominio de Amplify (`https://main.xxxxx.amplifyapp.com`) a los orígenes permitidos del método OPTIONS/GET/POST.
+
+### URL de la app
+
+Al terminar el build, Amplify muestra una URL como:
+
+`https://main.dxxxxxxxx.amplifyapp.com`
