@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   actualizarProducto,
@@ -6,6 +6,7 @@ import {
   obtenerProductos,
 } from '../api/tablasvega'
 import type { ActualizarProducto, NuevoProducto, Producto } from '../types/producto'
+import Modal from './Modal'
 import './ProductosView.css'
 
 const formularioInicial: NuevoProducto = {
@@ -28,6 +29,11 @@ export default function ProductosView() {
   const [mensaje, setMensaje] = useState<string | null>(null)
   const [form, setForm] = useState<NuevoProducto>(formularioInicial)
   const [editando, setEditando] = useState<ActualizarProducto | null>(null)
+  const [modalCrear, setModalCrear] = useState(false)
+  const [modalGuardar, setModalGuardar] = useState(false)
+
+  const formCrearRef = useRef<HTMLFormElement>(null)
+  const formEditarRef = useRef<HTMLFormElement>(null)
 
   const cargarProductos = useCallback(async () => {
     setCargando(true)
@@ -61,14 +67,25 @@ export default function ProductosView() {
     })
     setMensaje(null)
     setError(null)
+    setModalGuardar(false)
   }
 
   function cancelarEdicion() {
     setEditando(null)
+    setModalGuardar(false)
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
+  function abrirModalCrear() {
+    if (!formCrearRef.current?.reportValidity()) return
+    setModalCrear(true)
+  }
+
+  function abrirModalGuardar() {
+    if (!formEditarRef.current?.reportValidity()) return
+    setModalGuardar(true)
+  }
+
+  async function confirmarCrear() {
     setEnviando(true)
     setError(null)
     setMensaje(null)
@@ -80,17 +97,18 @@ export default function ProductosView() {
         'Valor Venta': Number(form['Valor Venta']),
       })
       setForm(formularioInicial)
+      setModalCrear(false)
       setMensaje('Producto creado correctamente.')
       await cargarProductos()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear')
+      setModalCrear(false)
     } finally {
       setEnviando(false)
     }
   }
 
-  async function handleActualizar(e: FormEvent) {
-    e.preventDefault()
+  async function confirmarGuardar() {
     if (!editando) return
 
     setEnviando(true)
@@ -105,13 +123,25 @@ export default function ProductosView() {
         'Valor Venta': Number(editando['Valor Venta']),
       })
       setEditando(null)
+      setModalGuardar(false)
       setMensaje('Producto actualizado correctamente.')
       await cargarProductos()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al actualizar')
+      setModalGuardar(false)
     } finally {
       setEnviando(false)
     }
+  }
+
+  function handleSubmitCrear(e: FormEvent) {
+    e.preventDefault()
+    abrirModalCrear()
+  }
+
+  function handleSubmitEditar(e: FormEvent) {
+    e.preventDefault()
+    abrirModalGuardar()
   }
 
   return (
@@ -136,6 +166,87 @@ export default function ProductosView() {
       {error && <div className="alert alert--error">{error}</div>}
       {mensaje && <div className="alert alert--success">{mensaje}</div>}
 
+      <Modal
+        abierto={modalCrear}
+        titulo="Confirmar creación"
+        onCerrar={() => !enviando && setModalCrear(false)}
+      >
+        <p className="modal__texto">¿Deseas crear este producto?</p>
+        <ul className="modal__resumen">
+          <li>
+            <strong>Nombre:</strong> {form.Nombre}
+          </li>
+          <li>
+            <strong>Valor venta:</strong> $
+            {Number(form['Valor Venta']).toLocaleString('es-CO')}
+          </li>
+          <li>
+            <strong>Stock:</strong> {Number(form.Stock).toLocaleString('es-CO')}
+          </li>
+        </ul>
+        <div className="modal__actions">
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={() => setModalCrear(false)}
+            disabled={enviando}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={confirmarCrear}
+            disabled={enviando}
+          >
+            {enviando ? 'Creando…' : 'Crear'}
+          </button>
+        </div>
+      </Modal>
+
+      <Modal
+        abierto={modalGuardar}
+        titulo="Confirmar cambios"
+        onCerrar={() => !enviando && setModalGuardar(false)}
+      >
+        {editando && (
+          <>
+            <p className="modal__texto">¿Deseas guardar los cambios?</p>
+            <ul className="modal__resumen">
+              <li>
+                <strong>Nombre:</strong> {editando.Nombre}
+              </li>
+              <li>
+                <strong>Valor venta:</strong> $
+                {Number(editando['Valor Venta']).toLocaleString('es-CO')}
+              </li>
+              <li>
+                <strong>Stock:</strong>{' '}
+                {Number(editando.Stock).toLocaleString('es-CO')}
+              </li>
+            </ul>
+            <div className="modal__actions">
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={() => setModalGuardar(false)}
+                disabled={enviando}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={confirmarGuardar}
+                disabled={enviando}
+              >
+                {enviando ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+          </>
+        )}
+      </Modal>
+
       {editando && (
         <section className="card card--edit">
           <div className="card__title">
@@ -144,7 +255,11 @@ export default function ProductosView() {
               {editando.tablasvega}
             </span>
           </div>
-          <form className="form" onSubmit={handleActualizar}>
+          <form
+            ref={formEditarRef}
+            className="form"
+            onSubmit={handleSubmitEditar}
+          >
             <label>
               Nombre
               <input
@@ -189,18 +304,13 @@ export default function ProductosView() {
               />
             </label>
             <div className="form__actions">
-              <button
-                type="submit"
-                className="btn btn--primary"
-                disabled={enviando}
-              >
-                {enviando ? 'Guardando…' : 'Guardar (PATCH)'}
+              <button type="submit" className="btn btn--primary">
+                Guardar
               </button>
               <button
                 type="button"
                 className="btn btn--secondary"
                 onClick={cancelarEdicion}
-                disabled={enviando}
               >
                 Cancelar
               </button>
@@ -211,7 +321,7 @@ export default function ProductosView() {
 
       <section className="card">
         <h2>Nuevo producto</h2>
-        <form className="form" onSubmit={handleSubmit}>
+        <form ref={formCrearRef} className="form" onSubmit={handleSubmitCrear}>
           <label>
             Nombre
             <input
@@ -251,12 +361,8 @@ export default function ProductosView() {
               }
             />
           </label>
-          <button
-            type="submit"
-            className="btn btn--primary"
-            disabled={enviando}
-          >
-            {enviando ? 'Guardando…' : 'Crear (POST)'}
+          <button type="submit" className="btn btn--primary">
+            Crear
           </button>
         </form>
       </section>
