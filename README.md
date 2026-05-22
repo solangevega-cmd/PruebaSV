@@ -32,8 +32,8 @@ El repositorio incluye `amplify.yml` para compilar y publicar automáticamente d
    - (O deja que use `amplify.yml` automáticamente.)
 6. **No** configures `VITE_API_URL` con la URL completa de API Gateway (provoca error CORS / "Failed to fetch").
 7. **Rewrites and redirects** (Hosting → tu app → App settings): pega el contenido de `amplify-rewrites.json` o agrega manualmente:
-   - `/tablasvega` → `https://nunk2bv345.execute-api.us-east-1.amazonaws.com/tablasvega` (tipo **200 Rewrite**)
-   - `/<*>` → `/index.html` (tipo **200 Rewrite**, para React)
+   - `/tablasvega` → `https://nunk2bv345.execute-api.us-east-1.amazonaws.com/tablasvega` → status **`200`**
+   - `/<*>` → `/index.html` → status **`404-200`** (solo si el archivo no existe; con `200` la página queda en blanco)
 8. **Save and deploy** y vuelve a desplegar si ya estaba publicada.
 
 Cada `git push` a `main` volverá a desplegar la app.

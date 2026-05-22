@@ -8,7 +8,7 @@
   {
     "source": "/<*>",
     "target": "/index.html",
-    "status": "200",
+    "status": "404-200",
     "condition": null
   }
 ]
