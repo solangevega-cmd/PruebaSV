@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   actualizarProducto,
   crearProducto,
@@ -31,9 +30,6 @@ export default function ProductosView() {
   const [editando, setEditando] = useState<ActualizarProducto | null>(null)
   const [modalCrear, setModalCrear] = useState(false)
   const [modalGuardar, setModalGuardar] = useState(false)
-
-  const formCrearRef = useRef<HTMLFormElement>(null)
-  const formEditarRef = useRef<HTMLFormElement>(null)
 
   const cargarProductos = useCallback(async () => {
     setCargando(true)
@@ -75,13 +71,46 @@ export default function ProductosView() {
     setModalGuardar(false)
   }
 
+  function esFormularioCrearValido() {
+    const valor = Number(form['Valor Venta'])
+    const stock = Number(form.Stock)
+    return (
+      form.Nombre.trim() !== '' &&
+      !Number.isNaN(valor) &&
+      valor >= 0 &&
+      !Number.isNaN(stock) &&
+      stock >= 0
+    )
+  }
+
+  function esFormularioEditarValido() {
+    if (!editando) return false
+    const valor = Number(editando['Valor Venta'])
+    const stock = Number(editando.Stock)
+    return (
+      editando.Nombre.trim() !== '' &&
+      !Number.isNaN(valor) &&
+      valor >= 0 &&
+      !Number.isNaN(stock) &&
+      stock >= 0
+    )
+  }
+
   function abrirModalCrear() {
-    if (!formCrearRef.current?.reportValidity()) return
+    setError(null)
+    if (!esFormularioCrearValido()) {
+      setError('Completa nombre, valor venta y stock antes de crear.')
+      return
+    }
     setModalCrear(true)
   }
 
   function abrirModalGuardar() {
-    if (!formEditarRef.current?.reportValidity()) return
+    setError(null)
+    if (!esFormularioEditarValido()) {
+      setError('Completa nombre, valor venta y stock antes de guardar.')
+      return
+    }
     setModalGuardar(true)
   }
 
@@ -132,16 +161,6 @@ export default function ProductosView() {
     } finally {
       setEnviando(false)
     }
-  }
-
-  function handleSubmitCrear(e: FormEvent) {
-    e.preventDefault()
-    abrirModalCrear()
-  }
-
-  function handleSubmitEditar(e: FormEvent) {
-    e.preventDefault()
-    abrirModalGuardar()
   }
 
   return (
@@ -255,11 +274,7 @@ export default function ProductosView() {
               {editando.tablasvega}
             </span>
           </div>
-          <form
-            ref={formEditarRef}
-            className="form"
-            onSubmit={handleSubmitEditar}
-          >
+          <form className="form" noValidate>
             <label>
               Nombre
               <input
@@ -304,7 +319,11 @@ export default function ProductosView() {
               />
             </label>
             <div className="form__actions">
-              <button type="submit" className="btn btn--primary">
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={abrirModalGuardar}
+              >
                 Guardar
               </button>
               <button
@@ -321,7 +340,7 @@ export default function ProductosView() {
 
       <section className="card">
         <h2>Nuevo producto</h2>
-        <form ref={formCrearRef} className="form" onSubmit={handleSubmitCrear}>
+        <form className="form" noValidate>
           <label>
             Nombre
             <input
@@ -361,7 +380,11 @@ export default function ProductosView() {
               }
             />
           </label>
-          <button type="submit" className="btn btn--primary">
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={abrirModalCrear}
+          >
             Crear
           </button>
         </form>
