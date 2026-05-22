@@ -28,8 +28,11 @@ export default function ProductosView() {
   const [mensaje, setMensaje] = useState<string | null>(null)
   const [form, setForm] = useState<NuevoProducto>(formularioInicial)
   const [editando, setEditando] = useState<ActualizarProducto | null>(null)
-  const [modalCrear, setModalCrear] = useState(false)
-  const [modalGuardar, setModalGuardar] = useState(false)
+
+  const [modalFormularioCrear, setModalFormularioCrear] = useState(false)
+  const [modalConfirmarCrear, setModalConfirmarCrear] = useState(false)
+  const [modalFormularioEditar, setModalFormularioEditar] = useState(false)
+  const [modalConfirmarGuardar, setModalConfirmarGuardar] = useState(false)
 
   const cargarProductos = useCallback(async () => {
     setCargando(true)
@@ -54,21 +57,34 @@ export default function ProductosView() {
     cargarProductos()
   }, [cargarProductos])
 
-  function iniciarEdicion(producto: Producto) {
+  function abrirModalCrear() {
+    setForm(formularioInicial)
+    setError(null)
+    setModalConfirmarCrear(false)
+    setModalFormularioCrear(true)
+  }
+
+  function abrirModalEditar(producto: Producto) {
     setEditando({
       tablasvega: producto.tablasvega,
       Nombre: producto.Nombre,
       Stock: producto.Stock,
       'Valor Venta': producto['Valor Venta'],
     })
-    setMensaje(null)
     setError(null)
-    setModalGuardar(false)
+    setModalConfirmarGuardar(false)
+    setModalFormularioEditar(true)
   }
 
-  function cancelarEdicion() {
+  function cerrarModalesCrear() {
+    setModalFormularioCrear(false)
+    setModalConfirmarCrear(false)
+  }
+
+  function cerrarModalesEditar() {
+    setModalFormularioEditar(false)
+    setModalConfirmarGuardar(false)
     setEditando(null)
-    setModalGuardar(false)
   }
 
   function esFormularioCrearValido() {
@@ -96,22 +112,22 @@ export default function ProductosView() {
     )
   }
 
-  function abrirModalCrear() {
-    setError(null)
+  function solicitarConfirmacionCrear() {
     if (!esFormularioCrearValido()) {
-      setError('Completa nombre, valor venta y stock antes de crear.')
+      setError('Completa nombre, valor venta y stock.')
       return
     }
-    setModalCrear(true)
+    setError(null)
+    setModalConfirmarCrear(true)
   }
 
-  function abrirModalGuardar() {
-    setError(null)
+  function solicitarConfirmacionGuardar() {
     if (!esFormularioEditarValido()) {
-      setError('Completa nombre, valor venta y stock antes de guardar.')
+      setError('Completa nombre, valor venta y stock.')
       return
     }
-    setModalGuardar(true)
+    setError(null)
+    setModalConfirmarGuardar(true)
   }
 
   async function confirmarCrear() {
@@ -126,12 +142,12 @@ export default function ProductosView() {
         'Valor Venta': Number(form['Valor Venta']),
       })
       setForm(formularioInicial)
-      setModalCrear(false)
+      cerrarModalesCrear()
       setMensaje('Producto creado correctamente.')
       await cargarProductos()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear')
-      setModalCrear(false)
+      setModalConfirmarCrear(false)
     } finally {
       setEnviando(false)
     }
@@ -151,13 +167,12 @@ export default function ProductosView() {
         Stock: Number(editando.Stock),
         'Valor Venta': Number(editando['Valor Venta']),
       })
-      setEditando(null)
-      setModalGuardar(false)
+      cerrarModalesEditar()
       setMensaje('Producto actualizado correctamente.')
       await cargarProductos()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al actualizar')
-      setModalGuardar(false)
+      setModalConfirmarGuardar(false)
     } finally {
       setEnviando(false)
     }
@@ -185,10 +200,76 @@ export default function ProductosView() {
       {error && <div className="alert alert--error">{error}</div>}
       {mensaje && <div className="alert alert--success">{mensaje}</div>}
 
+      {/* Modal: formulario nuevo producto */}
       <Modal
-        abierto={modalCrear}
+        abierto={modalFormularioCrear}
+        titulo="Nuevo producto"
+        onCerrar={() => !enviando && cerrarModalesCrear()}
+      >
+        <div className="form form--modal">
+          <label>
+            Nombre
+            <input
+              type="text"
+              value={form.Nombre}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, Nombre: e.target.value }))
+              }
+              placeholder="Ej. Cuaderno"
+            />
+          </label>
+          <label>
+            Valor venta
+            <input
+              type="number"
+              min={0}
+              value={form['Valor Venta'] === 0 ? '' : form['Valor Venta']}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  'Valor Venta': e.target.value === '' ? 0 : Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+          <label>
+            Stock
+            <input
+              type="number"
+              min={0}
+              value={form.Stock === 0 ? '' : form.Stock}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  Stock: e.target.value === '' ? 0 : Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+        </div>
+        <div className="modal__actions">
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={cerrarModalesCrear}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={solicitarConfirmacionCrear}
+          >
+            Crear
+          </button>
+        </div>
+      </Modal>
+
+      {/* Modal: confirmar creación */}
+      <Modal
+        abierto={modalConfirmarCrear}
         titulo="Confirmar creación"
-        onCerrar={() => !enviando && setModalCrear(false)}
+        onCerrar={() => !enviando && setModalConfirmarCrear(false)}
       >
         <p className="modal__texto">¿Deseas crear este producto?</p>
         <ul className="modal__resumen">
@@ -207,10 +288,10 @@ export default function ProductosView() {
           <button
             type="button"
             className="btn btn--secondary"
-            onClick={() => setModalCrear(false)}
+            onClick={() => setModalConfirmarCrear(false)}
             disabled={enviando}
           >
-            Cancelar
+            Volver
           </button>
           <button
             type="button"
@@ -223,10 +304,95 @@ export default function ProductosView() {
         </div>
       </Modal>
 
+      {/* Modal: formulario editar */}
       <Modal
-        abierto={modalGuardar}
+        abierto={modalFormularioEditar}
+        titulo="Editar producto"
+        onCerrar={() => !enviando && cerrarModalesEditar()}
+      >
+        {editando && (
+          <>
+            <div className="form form--modal">
+              <label>
+                Nombre
+                <input
+                  type="text"
+                  value={editando.Nombre}
+                  onChange={(e) =>
+                    setEditando((f) =>
+                      f ? { ...f, Nombre: e.target.value } : f,
+                    )
+                  }
+                />
+              </label>
+              <label>
+                Valor venta
+                <input
+                  type="number"
+                  min={0}
+                  value={editando['Valor Venta']}
+                  onChange={(e) =>
+                    setEditando((f) =>
+                      f
+                        ? {
+                            ...f,
+                            'Valor Venta':
+                              e.target.value === ''
+                                ? 0
+                                : Number(e.target.value),
+                          }
+                        : f,
+                    )
+                  }
+                />
+              </label>
+              <label>
+                Stock
+                <input
+                  type="number"
+                  min={0}
+                  value={editando.Stock}
+                  onChange={(e) =>
+                    setEditando((f) =>
+                      f
+                        ? {
+                            ...f,
+                            Stock:
+                              e.target.value === ''
+                                ? 0
+                                : Number(e.target.value),
+                          }
+                        : f,
+                    )
+                  }
+                />
+              </label>
+            </div>
+            <div className="modal__actions">
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={cerrarModalesEditar}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={solicitarConfirmacionGuardar}
+              >
+                Guardar
+              </button>
+            </div>
+          </>
+        )}
+      </Modal>
+
+      {/* Modal: confirmar guardado */}
+      <Modal
+        abierto={modalConfirmarGuardar}
         titulo="Confirmar cambios"
-        onCerrar={() => !enviando && setModalGuardar(false)}
+        onCerrar={() => !enviando && setModalConfirmarGuardar(false)}
       >
         {editando && (
           <>
@@ -248,10 +414,10 @@ export default function ProductosView() {
               <button
                 type="button"
                 className="btn btn--secondary"
-                onClick={() => setModalGuardar(false)}
+                onClick={() => setModalConfirmarGuardar(false)}
                 disabled={enviando}
               >
-                Cancelar
+                Volver
               </button>
               <button
                 type="button"
@@ -266,128 +432,16 @@ export default function ProductosView() {
         )}
       </Modal>
 
-      {editando && (
-        <section className="card card--edit">
-          <div className="card__title">
-            <h2>Editar producto</h2>
-            <span className="mono mono--sm" title={editando.tablasvega}>
-              {editando.tablasvega}
-            </span>
-          </div>
-          <form className="form" noValidate>
-            <label>
-              Nombre
-              <input
-                type="text"
-                required
-                value={editando.Nombre}
-                onChange={(e) =>
-                  setEditando((f) =>
-                    f ? { ...f, Nombre: e.target.value } : f,
-                  )
-                }
-              />
-            </label>
-            <label>
-              Valor venta
-              <input
-                type="number"
-                required
-                min={0}
-                value={editando['Valor Venta'] || ''}
-                onChange={(e) =>
-                  setEditando((f) =>
-                    f
-                      ? { ...f, 'Valor Venta': Number(e.target.value) }
-                      : f,
-                  )
-                }
-              />
-            </label>
-            <label>
-              Stock
-              <input
-                type="number"
-                required
-                min={0}
-                value={editando.Stock || ''}
-                onChange={(e) =>
-                  setEditando((f) =>
-                    f ? { ...f, Stock: Number(e.target.value) } : f,
-                  )
-                }
-              />
-            </label>
-            <div className="form__actions">
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={abrirModalGuardar}
-              >
-                Guardar
-              </button>
-              <button
-                type="button"
-                className="btn btn--secondary"
-                onClick={cancelarEdicion}
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
-
-      <section className="card">
+      <section className="card card--actions">
         <h2>Nuevo producto</h2>
-        <form className="form" noValidate>
-          <label>
-            Nombre
-            <input
-              type="text"
-              required
-              value={form.Nombre}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, Nombre: e.target.value }))
-              }
-              placeholder="Ej. Cuaderno"
-            />
-          </label>
-          <label>
-            Valor venta
-            <input
-              type="number"
-              required
-              min={0}
-              value={form['Valor Venta'] || ''}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  'Valor Venta': Number(e.target.value),
-                }))
-              }
-            />
-          </label>
-          <label>
-            Stock
-            <input
-              type="number"
-              required
-              min={0}
-              value={form.Stock || ''}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, Stock: Number(e.target.value) }))
-              }
-            />
-          </label>
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={abrirModalCrear}
-          >
-            Crear
-          </button>
-        </form>
+        <p className="card__hint">Agrega un artículo al inventario.</p>
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={abrirModalCrear}
+        >
+          Crear
+        </button>
       </section>
 
       <section className="card">
@@ -414,14 +468,7 @@ export default function ProductosView() {
               </thead>
               <tbody>
                 {productos.map((p) => (
-                  <tr
-                    key={p.tablasvega}
-                    className={
-                      editando?.tablasvega === p.tablasvega
-                        ? 'row--active'
-                        : undefined
-                    }
-                  >
+                  <tr key={p.tablasvega}>
                     <td>{p.Nombre}</td>
                     <td>${p['Valor Venta'].toLocaleString('es-CO')}</td>
                     <td>{p.Stock.toLocaleString('es-CO')}</td>
@@ -430,7 +477,7 @@ export default function ProductosView() {
                       <button
                         type="button"
                         className="btn btn--link"
-                        onClick={() => iniciarEdicion(p)}
+                        onClick={() => abrirModalEditar(p)}
                         disabled={enviando}
                       >
                         Editar
